@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Psicovida</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="stylesheet" href="/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <div class="navbar">
+        <div class="navbar-links">
+            <a href="#" onclick="mostrarTerapeuta(event)">Mostrar Terapeutas</a>
+            <a href="/" class="w3-button w3-black">Regresar</a>
+        </div>
+    </div>
+    
+    <div id="app" class="w3-container w3-row w3-padding">
+        <div id="div_form" class="w3-card w3-col l4 w3-padding-l6">
+            <div class="w3-padding-16">
+                <h4>Captura datos del terapeuta</h4>
+                <form id="formTerapeuta" class="w3-container w3-padding">
+                    <p>
+                        <label for="nombre">Nombre</label>
+                        <input class="w3-input w3-border w3-hover-sepia" type="text" id="nombre" name="nombre" required>
+                    </p>
+                    <p>
+                        <label for="telefono">Teléfono</label>
+                        <input class="w3-input w3-border w3-hover-sepia" type="number" id="telefono" name="telefono" required>
+                    </p>
+                    <p>
+                        <label for="direccion">Dirección</label>
+                        <input class="w3-input w3-border w3-hover-sepia" type="text" id="direccion" name="direccion" required>
+                    </p>
+                    <p>
+                        <label for="email">Email</label>
+                        <input class="w3-input w3-border w3-hover-sepia" type="email" id="email" name="email" required>
+                    </p>
+                    <p>
+                        <label for="edad">Edad</label>
+                        <input class="w3-input w3-border w3-hover-sepia" type="number" id="edad" name="edad" required>
+                    </p>
+                    <p>
+                        <label for="genero">Género</label>
+                        <select class="w3-input w3-border w3-hover-sepia" id="genero" name="genero" required>
+                            <option value="Masculino">Masculino</option>
+                            <option value="Femenino">Femenino</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </p>
+                    <p>
+                        <label for="especialidad">Especialidad</label>
+                        <select class="w3-input w3-border w3-hover-sepia" id="especialidad" name="especialidad" required>
+                            <option value="terapeuta_familiar">Terapeuta familiar</option>
+                            <option value="terapeuta_parejas">Terapeuta de parejas</option>
+                            <option value="terapeuta_personal">Terapeuta personal</option>
+                        </select>
+                    </p>
+                    <button class="w3-button w3-black" type="submit" onclick="insertarTerapeuta(event)">Insertar Terapeuta</button>
+                </form>
+                <div id="mensaje"></div>
+            </div>
+        </div>
+
+        <div id="div_table" class="w3-panel w3-col l8">
+            <div class="w3-container w3-padding-small" style="display: flex; gap: 160px;">
+                <div class="w3-container w3-padding-small">
+                    <input type="text" id="searchId" placeholder="Buscar por ID" class="w3-input w3-border" style="width: 200px; display: inline-block;">
+                    <button class="w3-button w3-write" onclick="buscarTerapeuta()" style="display: inline-block;">🔍</button>
+                </div>               
+                <div class="w3-container w3-padding-small" style="display: flex; align-items: center;">
+                    <input type="text" id="eliminaTe" placeholder="Eliminar por ID" class="w3-input w3-border" style="width: 200px; margin-right: 8px;">
+                    <button class="w3-button w3-write" onclick="eliminarTerapeuta()">❌</button>
+                </div>                
+            </div>
+
+            <h3>Lista de terapeutas</h3>
+            <div style="overflow-x: auto;">
+                <table class="w3-table-all">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Teléfono</th>
+                            <th>Dirección</th>         
+                            <th>Email</th>
+                            <th>Edad</th>
+                            <th>Género</th>
+                            <th>Especialidad</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaTerapeutas"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Función para insertar un paciente
+        function insertarTerapeuta(event) {
+            event.preventDefault();
+            const terapeutaData = {
+                nombre: document.getElementById('nombre').value.trim(),
+                telefono: document.getElementById('telefono').value.trim(),
+                direccion: document.getElementById('direccion').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                edad: document.getElementById('edad').value.trim(),
+                genero: document.getElementById('genero').value.trim(),
+                especialidad: document.getElementById('especialidad').value.trim()
+            };
+
+            for (const [key, value] of Object.entries(terapeutaData)) {
+                if (!value) {
+                    Swal.fire({
+                        title: 'Campos incompletos',
+                        text: `El campo ${key.toUpperCase()} no puede estar vacío.`,
+                        icon: 'warning',
+                        confirmButtonText: 'Aceptar'
+                    });
+                    return;
+                }
+            }
+            fetch('/api/terapeutas', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(terapeutaData)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message === 'Terapeuta agregado') {
+                        Swal.fire({
+                            title: '¡Éxito!',
+                            text: 'Terapeuta agregado con éxito',
+                            icon: 'success',
+                            confirmButtonText: 'Aceptar'
+                        });
+                        document.getElementById('formTerapeuta').reset();
+                        mostrarTerapeuta();
+                    } else {
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Error al agregar terapeuta',
+                            icon: 'error',
+                            confirmButtonText: 'Intentar de nuevo'
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.log('Error:', error);
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Error en la conexión',
+                        icon: 'error',
+                        confirmButtonText: 'Aceptar'
+                    });
+                });
+        }
+
+        // Función para mostrar la lista de terapeutas
+        function mostrarTerapeuta() {
+            fetch('/api/terapeutas')
+            .then(response => response.json())
+            .then(data => {
+                const tablaTerapeutas = document.getElementById('tablaTerapeutas');
+                tablaTerapeutas.innerHTML = '';
+                data.data.forEach(terapeuta => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${terapeuta.PKTERAPEUTAS}</td>
+                        <td>${terapeuta.NOMBRE}</td>
+                        <td>${terapeuta.TELEFONO}</td>
+                        <td>${terapeuta.DIRECCION}</td>
+                        <td>${terapeuta.EMAIL}</td>
+                        <td>${terapeuta.EDAD}</td>
+                        <td>${terapeuta.GENERO}</td>
+                        <td>${terapeuta.ESPECIALIDAD}</td>
+                    `;
+                    tablaTerapeutas.appendChild(tr);
+                });
+            })
+            .catch(error => {
+                console.log('Error al obtener los terapeutas:', error);
+                document.getElementById('mensaje').innerText = 'Error al cargar los terapeutas';
+            });
+        }
+
+        // Realiza la búsqueda en el servidor usando el ID
+        function buscarTerapeuta() {
+            const terapeutaId = document.getElementById('searchId').value;
+            if (!terapeutaId) {
+                Swal.fire({
+                    title: 'ID inválido',
+                    text: 'Por favor ingresa un ID válido.',
+                    icon: 'warning',
+                    confirmButtonText: 'Aceptar'
+                });
+            return;
+            }
+            fetch(`/api/terapeutas/buscar/${terapeutaId}`)
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.getElementById('tablaTerapeutas');
+                tbody.innerHTML = '';
+                if (data.data.length > 0) {
+                    const terapeuta = data.data[0];
+                    const row = `
+                        <tr>
+                            <td>${terapeuta.PKTERAPEUTAS}</td>
+                            <td>${terapeuta.NOMBRE}</td>
+                            <td>${terapeuta.TELEFONO}</td>
+                            <td>${terapeuta.DIRECCION}</td>
+                            <td>${terapeuta.EMAIL}</td>
+                            <td>${terapeuta.EDAD}</td>
+                            <td>${terapeuta.GENERO}</td>
+                            <td>${terapeuta.ESPECIALIDAD}</td>
+                            <td>
+                                <button class="w3-button w3-write" onclick="editarTerapeuta(${terapeuta.PKTERAPEUTAS})">📝</button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML = row;
+                        Swal.fire({
+                            title: '¡Terapeuta encontrado!',
+                            text: `Terapeuta con ID ${terapeutaId} cargado exitosamente.`,
+                            icon: 'success',
+                            confirmButtonText: 'Aceptar'
+                        });
+                } else {
+                    Swal.fire({
+                        title: 'Terapeuta no encontrado',
+                        text: `No se encontró ningún terapeuta con el ID ${terapeutaId}.`,
+                        icon: 'info',
+                        confirmButtonText: 'Aceptar'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error en la búsqueda:', error);
+                    Swal.fire({
+                        title: 'Error de conexión',
+                        text: 'Hubo un problema al buscar el terapeuta.',
+                        icon: 'error',
+                        confirmButtonText: 'Aceptar'
+                    });
+            });
+        }
+
+        // Función para eliminar un terapeuta
+        function eliminarTerapeuta() {
+            const terapeutaId = document.getElementById('eliminaTe').value;
+            if (!terapeutaId) {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Por favor, ingresa un ID válido.',
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar'
+                });
+            return;
+            }
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: 'Esta acción eliminará permanentemente al terapeuta.',
+                icon: 'warning',
+                showDenyButton: true,
+                showCancelButton: false,
+                confirmButtonText: 'Eliminar',
+                denyButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/api/terapeutas/${terapeutaId}`, {
+                        method: 'DELETE',
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.message === 'Terapeuta eliminado') {
+                            Swal.fire({
+                                title: '¡Éxito!',
+                                text: 'Terapeuta eliminado con éxito.',
+                                icon: 'success',
+                                confirmButtonText: 'Aceptar'
+                            });
+                        mostrarTerapeuta();
+                        } else {
+                            Swal.fire({
+                                title: 'Error',
+                                text: 'Error al eliminar el terapeuta.',
+                                icon: 'error',
+                                confirmButtonText: 'Aceptar'
+                            });
+                        }
+                    })
+                    .catch(error => {
+                    console.error('Error al eliminar terapeuta:', error);
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Error en la conexión.',
+                        icon: 'error',
+                        confirmButtonText: 'Aceptar'
+                    });
+                });
+                } else if (result.isDenied) {
+                    Swal.fire('Acción cancelada', 'No se eliminó ningún terapeuta.', 'info');
+                }
+            });
+        }
+
+
+        function editarTerapeuta(terapeutaId) {
+            const fila = document.querySelector(`#tablaTerapeutas tr`);
+            const celdas = fila.children;
+            const terapeuta = {
+                id: celdas[0].textContent,
+                nombre: celdas[1].textContent,
+                telefono: celdas[2].textContent,
+                direccion: celdas[3].textContent,
+                email: celdas[4].textContent,
+                edad: celdas[5].textContent,
+                genero: celdas[6].textContent,
+                especialidad: celdas[7].textContent,
+            };
+            fila.innerHTML = `
+                <td>${terapeuta.id}</td>
+                <td><input type="text" value="${terapeuta.nombre}" /></td>
+                <td><input type="text" value="${terapeuta.telefono}" /></td>
+                <td><input type="text" value="${terapeuta.direccion}" /></td>
+                <td><input type="text" value="${terapeuta.email}" /></td>
+                <td><input type="number" value="${terapeuta.edad}" /></td>
+                <td><input type="text" value="${terapeuta.genero}" /></td>
+                <td><input type="text" value="${terapeuta.especialidad}" /></td>
+                <td>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="w3-button w3-write" onclick="guardarCambiosTerapeuta(${terapeutaId})">💾</button>
+                        <button class="w3-button w3-write" onclick="cancelarEdicionTerapeuta(${terapeutaId}, ${JSON.stringify(terapeuta).replace(/"/g, '&quot;')})">❌</button>
+                    </div>
+                </td>
+            `;
+        }
+
+        function guardarCambiosTerapeuta(terapeutaId) {
+            const fila = document.querySelector(`#tablaTerapeutas tr`);
+            const inputs = fila.querySelectorAll('input');
+            const datosActualizados = {
+                nombre: inputs[0].value,
+                telefono: inputs[1].value,
+                direccion: inputs[2].value,
+                email: inputs[3].value,
+                edad: inputs[4].value,
+                genero: inputs[5].value,
+                especialidad: inputs[6].value,
+            };
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: '¿Deseas guardar los cambios realizados al terapeuta?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Guardar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/api/terapeutas/${terapeutaId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(datosActualizados),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message === 'Terapeuta actualizado') {
+                        Swal.fire({
+                            title: '¡Éxito!',
+                            text: 'Terapeuta actualizado con éxito.',
+                            icon: 'success',
+                            confirmButtonText: 'Aceptar'
+                        });
+                        mostrarTerapeuta();
+                    } else {
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Hubo un problema al actualizar el terapeuta.',
+                            icon: 'error',
+                            confirmButtonText: 'Aceptar'
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al actualizar terapeuta:', error);
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Error en la conexión.',
+                        icon: 'error',
+                        confirmButtonText: 'Aceptar'
+                    });
+                });
+            } else {
+                Swal.fire({
+                    title: 'Cancelado',
+                    text: 'Los cambios no se han guardado.',
+                    icon: 'info',
+                    confirmButtonText: 'Aceptar'
+                });
+            }
+            });
+        }
+
+        function cancelarEdicionTerapeuta(terapeutaId, datosOriginales) {
+            Swal.fire({
+                title: '¿Cancelar edición?',
+                text: 'Se perderán todos los cambios realizados en esta fila.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, cancelar',
+                cancelButtonText: 'No, continuar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const fila = document.querySelector(`#tablaTerapeutas tr`);
+                    fila.innerHTML = `
+                        <td>${datosOriginales.id}</td>
+                        <td>${datosOriginales.nombre}</td>
+                        <td>${datosOriginales.telefono}</td>
+                        <td>${datosOriginales.direccion}</td>
+                        <td>${datosOriginales.email}</td>
+                        <td>${datosOriginales.edad}</td>
+                        <td>${datosOriginales.genero}</td>
+                        <td>${datosOriginales.especialidad}</td>
+                        <td>
+                            <button class="w3-button w3-blue" onclick="editarTerapeuta(${terapeutaId})">📝</button>
+                        </td>
+                    `;
+                    Swal.fire({
+                        title: 'Edición cancelada',
+                        text: 'Los cambios han sido descartados.',
+                        icon: 'success',
+                        confirmButtonText: 'Aceptar'
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Continuar editando',
+                        text: 'Puedes seguir realizando cambios.',
+                        icon: 'info',
+                        confirmButtonText: 'Aceptar'
+                    });
+                }
+            });
+        }
+        window.onload = mostrarTerapeuta;
+    </script>
+</body>
+</html>

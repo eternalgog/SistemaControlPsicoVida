@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Psicovida</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridjs/dist/theme/mermaid.min.css">
+    <link rel="stylesheet" href="/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+
+    <div class="navbar">
+        <div class="navbar-links">
+            <a href="#" onclick="mostrarCitas(event)">Mostrar cita</a>
+            <a href="/" class="w3-button w3-black">Regresar</a>
+        </div>
+    </div>
+
+    <div id="app" class="w3-container w3-row w3-padding">
+        <div id="div_form" class="w3-card w3-col l4 w3-padding-l6">
+            <div class="w3-padding-16">
+                <h4>Captura datos de la cita</h4>
+                <form id="formCitas" class="w3-container w3-padding">
+                    <p>
+                        <label for="dia">Día</label>
+                        <input class="w3-input w3-border w3-hover-sepia" type="date" id="dia" name="dia">
+                    </p>
+                    <p>
+                        <label for="hora">Hora</label>
+                        <input class="w3-input w3-border w3-hover-sepia" type="time" id="hora" name="hora">
+                    </p>
+                    <p>
+                        <label for="terapeuta">Terapeuta</label>
+                        <select class="w3-input w3-border w3-hover-sepia" id="terapeuta" name="terapeuta">
+                            <!-- Opciones de terapeutas cargadas aquí -->
+                        </select>
+                    </p>
+                    <p>
+                        <label for="paciente">Paciente</label>
+                        <select class="w3-input w3-border w3-hover-sepia" id="paciente" name="paciente">
+                            <!-- Los pacientes serán cargados aquí -->
+                        </select>
+                    </p>
+                    <p>
+                        <label for="motivo">Motivo de la cita</label>
+                        <input class="w3-input w3-border w3-hover-sepia" type="text" id="motivo" name="motivo" placeholder="Motivo de la cita">
+                    </p>
+                    <button class="w3-button w3-black" type="submit" onclick="insertarCita(event)">Insertar Citas</button>
+                </form>
+                <div id="mensaje"></div>
+            </div>
+        </div>
+
+        <div id="div_table" class="w3-panel w3-col l8">
+            <div class="w3-container w3-padding-small" style="display: flex; gap: 160px;">
+                <div class="w3-container w3-padding-small">
+                    <input type="text" id="searchId" placeholder="Buscar por ID" class="w3-input w3-border" style="width: 200px; display: inline-block;">
+                    <button class="w3-button w3-write" onclick="buscarCita()" style="display: inline-block;">🔍</button>
+                </div>               
+
+                <div class="w3-container w3-padding-small" style="display: flex; align-items: center;">
+                    <input type="text" id="eliminaCi" placeholder="Eliminar por ID" class="w3-input w3-border" style="width: 200px; margin-right: 8px;">
+                    <button class="w3-button w3-write" onclick="eliminarCita()">❌</button>
+                </div>                
+            </div>
+
+            <h3>Lista de citas</h3>
+            <div style="overflow-x: auto;">
+                <table class="w3-table-all">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Día</th>
+                            <th>Hora</th>
+                            <th>Paciente</th>
+                            <th>Terapeuta</th>
+                            <th>Motivo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaCitas"></tbody>
+                </table>
+            </div>
+        </div>        
+    </div>
+
+    <script>
+        // Función para insertar una cita
+        function insertarCita(event) {
+            event.preventDefault();
+            const citaData = {
+                dia: document.getElementById('dia').value.trim(),
+                hora: document.getElementById('hora').value.trim(),
+                paciente: document.getElementById('paciente').value.trim(),
+                terapeuta: document.getElementById('terapeuta').value.trim(),
+                motivocita: document.getElementById('motivo').value.trim()
+            };
+            for (const [key, value] of Object.entries(citaData)) {
+                if (!value) {
+                    Swal.fire({
+                        title: 'Campos incompletos',
+                        text: `El campo ${key.toUpperCase()} no puede estar vacío.`,
+                        icon: 'warning',
+                        confirmButtonText: 'Aceptar'
+                    });
+                return;
+                }
+            }
+            fetch('/api/citas', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(citaData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message === 'Cita agregada') {
+                    Swal.fire({
+                        title: '¡Éxito!',
+                        text: 'Cita agregada con éxito',
+                        icon: 'success',
+                        confirmButtonText: 'Aceptar'
+                    });
+                    document.getElementById('formCitas').reset();
+                    mostrarCitas();
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Error al agregar cita',
+                        icon: 'error',
+                        confirmButtonText: 'Intentar de nuevo'
+                    });
+                }
+            })
+            .catch(error => {
+                console.log('Error:', error);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Error en la conexión',
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar'
+                });
+            });
+        }
+
+        // Función para mostrar una cita
+        function mostrarCitas() {
+            fetch('/api/citas')
+            .then(response => response.json())
+            .then(data => {
+                const tablaCitas = document.getElementById('tablaCitas');
+                tablaCitas.innerHTML = '';
+                if (data && data.data && Array.isArray(data.data)) {
+                    data.data.forEach(cita => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${cita.PKCITAS}</td>
+                            <td>${cita.DIA}</td>
+                            <td>${cita.HORA}</td>
+                            <td>${cita.PACIENTE}</td>
+                            <td>${cita.TERAPEUTA}</td>
+                            <td>${cita.MOTIVOCITA}</td>
+                        `;
+                        tablaCitas.appendChild(tr);
+                    });
+                } else {
+                    document.getElementById('mensaje').innerText = 'No se encontraron citas';
+                }
+            })
+            .catch(error => {
+                console.log('Error al obtener las citas:', error);
+                document.getElementById('mensaje').innerText = 'Error al cargar las citas';
+            });
+        }
+
+        function buscarCita() {
+        const citaId = document.getElementById('searchId').value;
+        if (!citaId) {
+            Swal.fire({
+                title: 'ID inválido',
+                text: 'Por favor ingresa un ID válido.',
+                icon: 'warning',
+                confirmButtonText: 'Aceptar'
+            });
+            return;
+        }
+        fetch(`/api/citas/buscar/${citaId}`)
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('tablaCitas');
+            tbody.innerHTML = '';
+            if (data.data.length > 0) {
+                const cita = data.data[0];
+                const row = `
+                    <tr>
+                        <td>${cita.PKCITAS}</td>
+                        <td>${cita.DIA}</td>
+                        <td>${cita.HORA}</td>
+                        <td>${cita.PACIENTE || 'No disponible'}</td>  <!-- Asegúrate de que 'PACIENTE' esté correctamente asignado -->
+                        <td>${cita.TERAPEUTA || 'No disponible'}</td> <!-- Asegúrate de que 'TERAPEUTA' esté correctamente asignado -->
+                        <td>${cita.MOTIVOCITA}</td>
+                        <td>
+                            <button class="w3-button w3-write" onclick="editarCita(${cita.PKCITAS})">📝</button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML = row;
+                Swal.fire({
+                    title: '¡Cita encontrada!',
+                    text: `Cita con ID ${citaId} cargada exitosamente.`,
+                    icon: 'success',
+                    confirmButtonText: 'Aceptar'
+                });
+            } else {
+                Swal.fire({
+                    title: 'Cita no encontrada',
+                    text: `No se encontró ninguna cita con el ID ${citaId}.`,
+                    icon: 'info',
+                    confirmButtonText: 'Aceptar'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error en la búsqueda:', error);
+            Swal.fire({
+                title: 'Error de conexión',
+                text: 'Hubo un problema al buscar la cita.',
+                icon: 'error',
+                confirmButtonText: 'Aceptar'
+            });
+        });
+        }
+
+        // Función para eliminar una cita
+        function eliminarCita() {
+            const citaId = document.getElementById('eliminaCi').value;
+            console.log('ID de cita para eliminar:', citaId);
+                if (!citaId) {
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Por favor, ingresa un ID válido.',
+                        icon: 'error',
+                        confirmButtonText: 'Aceptar'
+                    });
+                    return;
+                }
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: 'Esta acción eliminará permanentemente la cita.',
+                icon: 'warning',
+                showDenyButton: true,
+                showCancelButton: false,
+                confirmButtonText: 'Eliminar',
+                denyButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/api/citas/${citaId}`, {
+                    method: 'DELETE',
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Respuesta del servidor:', data);
+                    if (data.message === 'Cita eliminada correctamente') {
+                        Swal.fire({
+                            title: '¡Éxito!',
+                            text: 'Cita eliminada con éxito.',
+                            icon: 'success',
+                            confirmButtonText: 'Aceptar'
+                        });
+                        mostrarCitas();
+                    } else {
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Error al eliminar la cita.',
+                            icon: 'error',
+                            confirmButtonText: 'Aceptar'
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al eliminar cita:', error);
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Error en la conexión.',
+                        icon: 'error',
+                        confirmButtonText: 'Aceptar'
+                    });
+                });
+            } else if (result.isDenied) {
+                Swal.fire('Acción cancelada', 'No se eliminó ninguna cita.', 'info');
+            }
+        });
+        }
+
+        function editarCita(citaId) {
+            const fila = document.querySelector(`#tablaCitas tr`);
+            const celdas = fila.children;
+            const cita = {
+                id: celdas[0].textContent,
+                dia: celdas[1].textContent,
+                hora: celdas[2].textContent,
+                paciente: celdas[3].textContent,
+                terapeuta: celdas[4].textContent,
+                motivocita: celdas[5].textContent
+            };
+
+            fila.innerHTML = `
+                <td>${cita.id}</td>
+                    <td><input type="date" value="${cita.dia}" /></td>
+                    <td><input type="time" value="${cita.hora}" /></td>
+                    <td><input type="text" value="${cita.paciente}" /></td>
+                    <td><input type="text" value="${cita.terapeuta}" /></td>
+                    <td><input type="text" value="${cita.motivocita}" /></td>
+                <td>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="w3-button w3-write" onclick="guardarCambios(${citaId})">💾</button>
+                        <button class="w3-button w3-write" onclick="cancelarEdicion(${citaId}, ${JSON.stringify(cita).replace(/"/g, '&quot;')})">❌</button>
+                    </div>
+                </td>
+            `;
+        }
+
+        function guardarCambios(citaId) {
+            const fila = document.querySelector(`#tablaCitas tr`);
+            const inputs = fila.querySelectorAll('input');
+            const datosActualizados = {
+                dia: inputs[0].value,
+                hora: inputs[1].value,
+                paciente: inputs[2].value,
+                terapeuta: inputs[3].value,
+                motivo: inputs[4].value
+            };
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: '¿Deseas guardar los cambios realizados a la cita?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Guardar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/api/citas/${citaId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(datosActualizados),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message === 'Cita actualizada') {
+                        Swal.fire({
+                            title: '¡Éxito!',
+                            text: 'Cita actualizada con éxito.',
+                            icon: 'success',
+                            confirmButtonText: 'Aceptar'
+                        });
+                        buscarCita(); // Aquí llamarías a la función que recarga las citas, si la tienes
+                    } else {
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Hubo un problema al actualizar la cita.',
+                            icon: 'error',
+                            confirmButtonText: 'Aceptar'
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al actualizar cita:', error);
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Error en la conexión.',
+                        icon: 'error',
+                        confirmButtonText: 'Aceptar'
+                    });
+                });
+                } else {
+                    Swal.fire({
+                        title: 'Cancelado',
+                        text: 'Los cambios no se han guardado.',
+                        icon: 'info',
+                        confirmButtonText: 'Aceptar'
+                    });
+                }
+            });
+        }
+
+        function cancelarEdicion(citaId, datosOriginales) {
+            Swal.fire({
+                title: '¿Cancelar edición?',
+                text: 'Se perderán todos los cambios realizados en esta cita.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, cancelar',
+                cancelButtonText: 'No, continuar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const fila = document.querySelector(`#tablaCitas tr`);
+                    fila.innerHTML = `
+                        <td>${datosOriginales.id}</td>
+                        <td>${datosOriginales.dia}</td>
+                        <td>${datosOriginales.hora}</td>
+                        <td>${datosOriginales.paciente}</td>
+                        <td>${datosOriginales.terapeuta}</td>
+                        <td>${datosOriginales.motivocita}</td>
+                        <td>
+                            <button class="w3-button w3-blue" onclick="editarCita(${citaId})">📝</button>
+                        </td>
+                    `;
+                Swal.fire({
+                    title: 'Edición cancelada',
+                    text: 'Los cambios han sido descartados.',
+                    icon: 'success',
+                    confirmButtonText: 'Aceptar'
+                });
+                } else {
+                    Swal.fire({
+                        title: 'Continuar editando',
+                        text: 'Puedes seguir realizando cambios.',
+                        icon: 'info',
+                        confirmButtonText: 'Aceptar'
+                    });
+                }
+            });
+        }
+
+        // Función para cargar los pacientes desde la API
+        function cargarPacientes() {
+            fetch('/api/pacientes')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Error al cargar pacientes, estado ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Datos recibidos:', data);
+
+                    if (data && Array.isArray(data.data)) {
+                        const selectPaciente = document.getElementById('paciente');
+                        selectPaciente.innerHTML = '';
+
+                        data.data.forEach(paciente => {
+                            const option = document.createElement('option');
+                            option.value = paciente.NOMBRE; 
+                            option.textContent = paciente.NOMBRE;  
+                            selectPaciente.appendChild(option);
+                        });
+                    } else {
+                        throw new Error('Los datos no están en el formato esperado');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al cargar pacientes:', error);
+                    alert('Hubo un error al cargar los pacientes.');
+                });
+        }
+
+        function cargarTerapeutas() {
+            fetch('/api/terapeutas')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Error al cargar terapeutas, estado ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Datos recibidos:', data);
+
+                    if (data && Array.isArray(data.data)) {
+                        const selectTerapeuta = document.getElementById('terapeuta');
+                        selectTerapeuta.innerHTML = '';
+
+                        data.data.forEach(terapeuta => {
+                            const option = document.createElement('option');
+                            option.value = terapeuta.NOMBRE;
+                            option.textContent = terapeuta.NOMBRE; 
+                            selectTerapeuta.appendChild(option); 
+                        });
+                    } else {
+                        throw new Error('Los datos no están en el formato esperado');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al cargar terapeutas:', error);
+                    alert('Hubo un error al cargar los terapeutas.');
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', cargarPacientes);
+        document.addEventListener('DOMContentLoaded', cargarTerapeutas);
+
+        document.getElementById('formCitas').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const pacienteId = document.getElementById('paciente').value;
+            console.log('ID del paciente seleccionado:', pacienteId);
+
+
+            const terapeutaId = document.getElementById('terapeuta').value;
+            console.log('ID del terapeuta seleccionado:', terapeutaId);
+        });
+        window.onload = mostrarCitas;
+    </script>
+    <script src="https://unpkg.com/gridjs/dist/gridjs.umd.js"></script>
+</body>
+</html>

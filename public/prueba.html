@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Psicovida</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridjs/dist/theme/mermaid.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <style>
+        .separador {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <button onclick="testAlert()">Probar Alerta</button>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
+    <script>
+        function testAlert() {
+            Swal.fire({
+                title: '¡Funciona!',
+                text: 'SweetAlert2 está funcionando correctamente.',
+                icon: 'success',
+                confirmButtonText: 'Aceptar'
+            });
+        }
+    </script>
+</body>
+</html>

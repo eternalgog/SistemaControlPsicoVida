@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Psicovida</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridjs/dist/theme/mermaid.min.css">
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="navbar">
+        <div class="navbar-links">
+            <a href="#" onclick="mostrarPacientes(event)">Mostrar Tabla</a>
+            <a href="/" class="w3-button w3-black">Regresar</a>
+        </div>
+    </div>
+
+    <div id="app" class="w3-container w3-row w3-padding">
+        <div id="div_form" class="w3-card w3-col l4 w3-padding-l6">
+            <div class="w3-padding-16">
+                <h4>Captura datos del paciente</h4>
+                <form id="formPaciente" class="w3-container w3-padding">
+                    <p>
+                        <label for="nombre">Nombre</label>
+                        <input class="w3-input w3-border w3-hover-sepia" type="text" id="nombre" name="nombre" placeholder="Nombre del paciente">
+                    </p>
+                    <p>
+                        <label for="direccion">Dirección</label>
+                        <input class="w3-input w3-border w3-hover-sepia" type="text" id="direccion" name="direccion" placeholder="Dirección del paciente">
+                    </p>
+                    <p>
+                        <label for="email">Email</label>
+                        <input class="w3-input w3-border w3-hover-sepia" type="text" id="email" name="email" placeholder="Email del paciente">
+                    </p>
+                    <p>
+                        <label for="telefono">Teléfono</label>
+                        <input class="w3-input w3-border w3-hover-sepia" type="number" id="telefono" name="telefono" placeholder="Teléfono del paciente">
+                    </p>
+                    <p>
+                        <label for="edad">Edad</label>
+                        <input class="w3-input w3-border w3-hover-sepia" type="number" id="edad" name="edad" placeholder="Edad del paciente">
+                    </p>
+                    <p>
+                        <label for="nss">NSS</label>
+                        <input class="w3-input w3-border w3-hover-sepia" type="number" id="nss" name="nss" placeholder="Número de seguro social">
+                    </p>
+                    <p>
+                        <label for="genero">Género</label>
+                        <select id="genero" name="genero" class="w3-input w3-border w3-hover-sepia">
+                            <option value="Masculino">Masculino</option>
+                            <option value="Femenino">Femenino</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </p>
+                    <button type="submit" class="w3-button w3-black" onclick="insertarPaciente(event)">Insertar Paciente</button>
+                </form>
+                <div id="mensaje"></div>
+            </div>
+        </div>
+
+        <div id="div_table" class="w3-panel w3-col l8">
+            <div class="w3-container w3-padding-small" style="display: flex; gap: 160px;">
+                <div class="w3-container w3-padding-small">
+                    <input type="text" id="searchId" placeholder="Buscar por ID" class="w3-input w3-border" style="width: 200px; display: inline-block;">
+                    <button class="w3-button w3-write" onclick="buscarPaciente()" style="display: inline-block;">🔍</button>
+                </div>               
+                <div class="w3-container w3-padding-small" style="display: flex; align-items: center;">
+                    <input type="text" id="eliminaPa" placeholder="Eliminar por ID" class="w3-input w3-border" style="width: 200px; margin-right: 8px;">
+                    <button class="w3-button w3-write" onclick="eliminarPaciente()">❌</button>
+                </div>                
+            </div>
+        
+            <h3>Lista de Pacientes</h3>
+            <div style="overflow-x: auto;">
+                <table class="w3-table-all">
+                    <thead class="table-header">
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Direccion</th>
+                            <th>Email</th>
+                            <th>Telefono</th>
+                            <th>Edad</th>
+                            <th>NSS</th>
+                            <th>Genero</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaPacientes"></tbody>
+                </table>
+            </div>
+        </div>   
+    </div>
+
+    <script>
+        // Función para insertar un paciente
+        function insertarPaciente(event) {
+            event.preventDefault();
+            const pacienteData = {
+                nombre: document.getElementById('nombre').value.trim(),
+                telefono: document.getElementById('telefono').value.trim(),
+                direccion: document.getElementById('direccion').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                edad: document.getElementById('edad').value.trim(),
+                genero: document.getElementById('genero').value.trim(),
+                nss: document.getElementById('nss').value.trim()
+            };
+            for (const [key, value] of Object.entries(pacienteData)) {
+                if (!value) {
+                    Swal.fire({
+                        title: 'Campos incompletos',
+                        text: `El campo ${key.toUpperCase()} no puede estar vacío.`,
+                        icon: 'warning',
+                        confirmButtonText: 'Aceptar'
+                        });
+                    return;
+                }
+            }
+            fetch('/api/pacientes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(pacienteData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message === 'Paciente agregado') {
+                    Swal.fire({
+                        title: '¡Éxito!',
+                        text: 'Paciente agregado con éxito',
+                        icon: 'success',
+                        confirmButtonText: 'Aceptar'
+                    });
+                document.getElementById('formPaciente').reset();
+                mostrarPacientes();
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Error al agregar paciente',
+                        icon: 'error',
+                        confirmButtonText: 'Intentar de nuevo'
+                    });
+                }
+            })
+            .catch(error => {
+                console.log('Error:', error);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Error en la conexión',
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar'
+                });
+            });
+        }
+
+        // Función para mostrar la lista de pacientes
+        function mostrarPacientes() {
+            fetch('/api/pacientes')
+                .then(response => response.json())
+                .then(data => {
+                    const tablaPacientes = document.getElementById('tablaPacientes');
+                    tablaPacientes.innerHTML = '';
+
+                    data.data.forEach(paciente => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${paciente.PKPACIENTE}</td>
+                            <td>${paciente.NOMBRE}</td>
+                            <td>${paciente.DIRECCION}</td>
+                            <td>${paciente.EMAIL}</td>
+                            <td>${paciente.TELEFONO}</td>
+                            <td>${paciente.EDAD}</td>
+                            <td>${paciente.NSS}</td>
+                            <td>${paciente.GENERO}</td>
+                        `;
+                        tablaPacientes.appendChild(tr);
+                    });
+                })
+                .catch(error => {
+                    console.log('Error al obtener los pacientes:', error);
+                    document.getElementById('mensaje').innerText = 'Error al cargar los pacientes';
+                });
+        }
+
+        // Realiza la búsqueda en el servidor usando el ID
+        function buscarPaciente() {
+            const pacienteId = document.getElementById('searchId').value;
+            if (!pacienteId) {
+                Swal.fire({
+                    title: 'ID inválido',
+                    text: 'Por favor ingresa un ID válido.',
+                    icon: 'warning',
+                    confirmButtonText: 'Aceptar'
+                });
+                return;
+            }
+            fetch(`/api/pacientes/buscar/${pacienteId}`)
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.getElementById('tablaPacientes');
+                tbody.innerHTML = '';
+                if (data.data.length > 0) {
+                    const paciente = data.data[0];
+                    const row = `
+                        <tr>
+                            <td>${paciente.PKPACIENTE}</td>
+                            <td>${paciente.NOMBRE}</td> 
+                            <td>${paciente.DIRECCION}</td>
+                            <td>${paciente.EMAIL}</td>
+                            <td>${paciente.TELEFONO}</td>
+                            <td>${paciente.EDAD}</td>
+                            <td>${paciente.NSS}</td>
+                            <td>${paciente.GENERO}</td>
+                            <td>
+                                <button class="w3-button w3-write" onclick="editarPaciente(${paciente.PKPACIENTE})">📝</button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML = row;
+                    Swal.fire({
+                        title: '¡Paciente encontrado!',
+                        text: `Paciente con ID ${pacienteId} cargado exitosamente.`,
+                        icon: 'success',
+                        confirmButtonText: 'Aceptar'
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Paciente no encontrado',
+                        text: `No se encontró ningún paciente con el ID ${pacienteId}.`,
+                        icon: 'info',
+                        confirmButtonText: 'Aceptar'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error en la búsqueda:', error);
+                Swal.fire({
+                    title: 'Error de conexión',
+                    text: 'Hubo un problema al buscar el paciente.',
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar'
+                });
+            });
+        }
+
+        // Función para eliminar un paciente
+        function eliminarPaciente() {
+            const pacienteId = document.getElementById('eliminaPa').value;
+            if (!pacienteId) {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Por favor, ingresa un ID válido.',
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar'
+                });
+                return;
+            }
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: 'Esta acción eliminará permanentemente al paciente.',
+                icon: 'warning',
+                showDenyButton: true,
+                showCancelButton: false,
+                confirmButtonText: 'Eliminar',
+                denyButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/api/pacientes/${pacienteId}`, {
+                    method: 'DELETE',
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message === 'Paciente eliminado') {
+                        Swal.fire({
+                            title: '¡Éxito!',
+                            text: 'Paciente eliminado con éxito.',
+                            icon: 'success',
+                            confirmButtonText: 'Aceptar'
+                        });
+                    mostrarPacientes();
+                    } else {
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Error al eliminar el paciente.',
+                            icon: 'error',
+                            confirmButtonText: 'Aceptar'
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al eliminar paciente:', error);
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Error en la conexión.',
+                        icon: 'error',
+                        confirmButtonText: 'Aceptar'
+                    });
+                });
+            } else if (result.isDenied) {
+                    Swal.fire('Acción cancelada', 'No se eliminó ningún paciente.', 'info');
+                }
+            });
+        }
+
+        function editarPaciente(pacienteId) {
+            const fila = document.querySelector(`#tablaPacientes tr`);
+            const celdas = fila.children;
+            const paciente = {
+                id: celdas[0].textContent,
+                nombre: celdas[1].textContent,
+                direccion: celdas[2].textContent,
+                email: celdas[3].textContent,
+                telefono: celdas[4].textContent,
+                edad: celdas[5].textContent,
+                nss: celdas[6].textContent,
+                genero: celdas[7].textContent,
+            };
+            fila.innerHTML = `
+                <td>${paciente.id}</td>
+                <td><input type="text" value="${paciente.nombre}" /></td>
+                <td><input type="text" value="${paciente.direccion}" /></td>
+                <td><input type="text" value="${paciente.email}" /></td>
+                <td><input type="text" value="${paciente.telefono}" /></td>
+                <td><input type="number" value="${paciente.edad}" /></td>
+                <td><input type="text" value="${paciente.nss}" /></td>
+                <td><input type="text" value="${paciente.genero}" /></td>
+                <td>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="w3-button w3-write" onclick="guardarCambios(${pacienteId})">💾</button>
+                        <button class="w3-button w3-write" onclick="cancelarEdicion(${pacienteId}, ${JSON.stringify(paciente).replace(/"/g, '&quot;')})">❌</button>
+                    </div>
+                </td>
+            `;
+        }
+
+        function guardarCambios(pacienteId) {
+            const fila = document.querySelector(`#tablaPacientes tr`);
+            const inputs = fila.querySelectorAll('input');
+            const datosActualizados = {
+                nombre: inputs[0].value,
+                direccion: inputs[1].value,
+                email: inputs[2].value,
+                telefono: inputs[3].value,
+                edad: inputs[4].value,
+                nss: inputs[5].value,
+                genero: inputs[6].value,
+            };
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: '¿Deseas guardar los cambios realizados al paciente?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Guardar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/api/pacientes/${pacienteId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                body: JSON.stringify(datosActualizados),
+                })
+                .then(response => response.json())
+                .then(data => {
+                if (data.message === 'Paciente actualizado') {
+                    Swal.fire({
+                        title: '¡Éxito!',
+                        text: 'Paciente actualizado con éxito.',
+                        icon: 'success',
+                        confirmButtonText: 'Aceptar'
+                    });
+                    buscarPaciente();
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Hubo un problema al actualizar el paciente.',
+                        icon: 'error',
+                        confirmButtonText: 'Aceptar'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error al actualizar paciente:', error);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Error en la conexión.',
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar'
+                });
+            });
+            } else {
+                Swal.fire({
+                    title: 'Cancelado',
+                    text: 'Los cambios no se han guardado.',
+                    icon: 'info',
+                    confirmButtonText: 'Aceptar'
+                });
+            }
+            });
+        }
+
+        function cancelarEdicion(pacienteId, datosOriginales) {
+            Swal.fire({
+                title: '¿Cancelar edición?',
+                text: 'Se perderán todos los cambios realizados en esta fila.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, cancelar',
+                cancelButtonText: 'No, continuar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const fila = document.querySelector(`#tablaPacientes tr`);
+                    fila.innerHTML = `
+                        <td>${datosOriginales.id}</td>
+                        <td>${datosOriginales.nombre}</td>
+                        <td>${datosOriginales.direccion}</td>
+                        <td>${datosOriginales.email}</td>
+                        <td>${datosOriginales.telefono}</td>
+                        <td>${datosOriginales.edad}</td>
+                        <td>${datosOriginales.nss}</td>
+                        <td>${datosOriginales.genero}</td>
+                        <td>
+                            <button class="w3-button w3-blue" onclick="editarPaciente(${pacienteId})">📝</button>
+                        </td>
+                    `;
+                    Swal.fire({
+                        title: 'Edición cancelada',
+                        text: 'Los cambios han sido descartados.',
+                        icon: 'success',
+                        confirmButtonText: 'Aceptar'
+                    });
+                } else {
+                    Swal.fire({
+                    title: 'Continuar editando',
+                    text: 'Puedes seguir realizando cambios.',
+                    icon: 'info',
+                    confirmButtonText: 'Aceptar'
+                });
+                }
+            });
+
+        }
+        window.onload = mostrarPacientes;
+    </script>
+    <script src="https://unpkg.com/gridjs/dist/gridjs.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</body>
+</html>
